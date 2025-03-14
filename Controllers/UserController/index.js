@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 module.exports = (db) => {
   return {
@@ -35,12 +36,60 @@ module.exports = (db) => {
           [email, hashedPassword]
         );
 
+        const token = jwt.sign(
+          { email: email },
+          process.env.SECRET || "secret",
+          {
+            expiresIn: "30d",
+          }
+        );
+
         return res
           .status(201)
-          .json({ message: "ユーザー登録成功", error: false });
+          .json({ message: "ユーザー登録成功", token: `JWT ${token}` });
       } catch (error) {
         console.error("登録エラー:", error);
         return res.status(500).json({ message: "サーバーエラー", error: true });
+      }
+    },
+
+    update: async (req, res) => {
+      try {
+        const { name, introduction, birthday } = req.body;
+        const userId = req.user.id;
+        console.log(req.body);
+
+        // Update user information in the database
+        await db.query(
+          "UPDATE users SET name = ?, introduce = ?, birthday = ?, updated = NOW() WHERE id = ?",
+          [name, introduction, birthday, userId]
+        );
+
+        return res
+          .status(200)
+          .json({ message: "ユーザー情報更新成功", error: false });
+      } catch (error) {
+        console.error("更新エラー:", error);
+        return res.status(500).json({ message: "サーバーエラー", error: true });
+      }
+    },
+
+    tokenlogin: async (req, res) => {
+      try {
+        const token = jwt.sign(
+          { id: req.user._id },
+          process.env.SECRET || "secret",
+          {
+            expiresIn: "30d",
+          }
+        );
+        return res.status(200).json({
+          message: "ログイン成功!",
+          token: `JWT ${token}`,
+          user: req.user,
+        });
+      } catch (err) {
+        res.status(400).json({ message: err.message });
       }
     },
   };

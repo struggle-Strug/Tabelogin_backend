@@ -7,7 +7,7 @@ module.exports = async (db) => {
               email VARCHAR(255) UNIQUE NOT NULL,
               password VARCHAR(255) NOT NULL,
               sex VARCHAR(255) DEFAULT NULL,
-              age INT DEFAULT NULL,
+              birthday VARCHAR(255) DEFAULT NULL,
               introduce VARCHAR(255) DEFAULT NULL,
               image VARCHAR(255) DEFAULT NULL,
               updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
