@@ -1,10 +1,11 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const passport = require("passport");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { globSync } = require("glob");
 const path = require("path");
-const mysql = require("mysql2/promise"); // Use mysql2 with promises
+const db = require("./config/db"); // ✅ Import MySQL connection pool
 const InitController = require("./Controllers/InitController");
 
 dotenv.config();
@@ -18,26 +19,24 @@ app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false, limit: "5mb" }));
 
+// Initialize Passport
+app.use(passport.initialize());
+require("./config/passport"); // ✅ Ensure passport strategies are loaded
+
 // Start the server inside an async function
 (async () => {
   try {
-    // Create MySQL database connection
-    const db = await mysql.createConnection({
-      host: process.env.DB_HOST || "localhost",
-      user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || "",
-      database: process.env.DB_NAME || "tabelogin",
-    });
-
+    // ✅ Test MySQL Connection
+    const connection = await db.getConnection();
     console.log("✅ Connected to MySQL!");
+    connection.release(); // ✅ Release connection back to pool
 
-    // Initialize the database before starting the server
+    // ✅ Initialize database before starting the server
     await InitController(db);
     console.log("✅ Database initialized successfully!");
 
-    // Dynamically load all routers and pass `db` to them
+    // ✅ Dynamically load all routers and pass `db` to them
     const routes = globSync("./Routers/*Router.js");
-
     routes.forEach((file) => {
       const router = require(path.resolve(file));
 
@@ -52,7 +51,7 @@ app.use(bodyParser.urlencoded({ extended: false, limit: "5mb" }));
       }
     });
 
-    // Start the server after initialization
+    // ✅ Start the server after initialization
     const PORT = process.env.PORT || 7000;
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
