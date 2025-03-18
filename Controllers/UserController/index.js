@@ -57,7 +57,6 @@ module.exports = (db) => {
       try {
         const { name, introduction, birthday } = req.body;
         const userId = req.user.id;
-        console.log(req.body);
 
         // Update user information in the database
         await db.query(
@@ -70,6 +69,61 @@ module.exports = (db) => {
           .json({ message: "ユーザー情報更新成功", error: false });
       } catch (error) {
         console.error("更新エラー:", error);
+        return res.status(500).json({ message: "サーバーエラー", error: true });
+      }
+    },
+
+    login: async (req, res) => {
+      try {
+        const { email, password } = req.body;
+
+        // Check if email is already registered
+        const [existingUser] = await db.query(
+          "SELECT * FROM users WHERE email = ?",
+          [email]
+        );
+
+        // ✅ FIX: Check if existingUser is empty before accessing `existingUser[0]`
+        if (!existingUser || existingUser.length === 0) {
+          return res
+            .status(400)
+            .json({ message: "未登録のユーザーです。", error: true });
+        }
+
+        // ✅ FIX: Ensure `existingUser[0]` exists before accessing `.password`
+        if (!existingUser[0].password) {
+          return res
+            .status(400)
+            .json({ message: "パスワードが見つかりません", error: true });
+        }
+
+        // ✅ Compare passwords correctly
+        const isMatch = await bcrypt.compare(
+          password,
+          existingUser[0].password
+        );
+        if (!isMatch) {
+          return res
+            .status(400)
+            .json({ message: "パスワードが間違っています。", error: true });
+        }
+
+        // ✅ Generate JWT Token
+        const token = jwt.sign(
+          { email: email },
+          process.env.SECRET || "secret",
+          {
+            expiresIn: "30d",
+          }
+        );
+
+        return res.status(200).json({
+          message: "ログイン成功",
+          token: `JWT ${token}`,
+          user: existingUser[0],
+        });
+      } catch (error) {
+        console.error("Login Error:", error);
         return res.status(500).json({ message: "サーバーエラー", error: true });
       }
     },

@@ -25,7 +25,6 @@ const jwtLogin = new JwtStrategy(jwtOptions, async (payload, done) => {
     // ✅ Release the connection back to the pool
     connection.release();
 
-    console.log(payload);
     if (rows.length > 0) {
       return done(null, rows[0]); // ✅ User found
     } else {
