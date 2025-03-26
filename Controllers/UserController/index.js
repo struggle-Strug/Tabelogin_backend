@@ -55,13 +55,13 @@ module.exports = (db) => {
 
     update: async (req, res) => {
       try {
-        const { name, introduction, birthday } = req.body;
+        const { name, introduction, birthday, image } = req.body;
         const userId = req.user.id;
 
         // Update user information in the database
         await db.query(
-          "UPDATE users SET name = ?, introduce = ?, birthday = ?, updated = NOW() WHERE id = ?",
-          [name, introduction, birthday, userId]
+          "UPDATE users SET name = ?, introduce = ?, birthday = ?, image = ?, updated = NOW() WHERE id = ?",
+          [name, introduction, birthday, image ? image : null, userId]
         );
 
         return res
