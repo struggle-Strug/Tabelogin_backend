@@ -6,6 +6,7 @@ module.exports = (db) => {
   router.post("/", requireAuth, postController.save);
   router.post("/comments/:id", requireAuth, postController.saveComments);
   router.get("/comments/:id", requireAuth, postController.getComments);
+  router.get("/images/:id", requireAuth, postController.getImages);
   router.get("/", requireAuth, postController.getPosts);
 
   return router;

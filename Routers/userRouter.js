@@ -7,6 +7,7 @@ module.exports = (db) => {
   router.post("/", userController.register);
   router.put("/", requireAuth, userController.update);
   router.get("/tokenlogin", requireAuth, userController.tokenlogin);
+  router.get("/:id", requireAuth, userController.getUserById);
 
   return router;
 };

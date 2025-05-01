@@ -182,5 +182,36 @@ module.exports = (db) => {
         return res.status(500).json({ message: "サーバーエラー", error: true });
       }
     },
+
+    getImages: async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        if (!id) {
+          return res
+            .status(400)
+            .json({ message: "user_id is required", error: true });
+        }
+
+        const [rows] = await db.query(
+          `
+          SELECT 
+            content_images.image_url
+          FROM content_images
+          JOIN contents ON content_images.content_id = contents.id
+          WHERE contents.user_id = ?
+          ORDER BY content_images.created_at DESC
+          `,
+          [id]
+        );
+
+        const images = rows.map((row) => row.image_url);
+
+        return res.json(images);
+      } catch (error) {
+        console.error("エラー:", error);
+        return res.status(500).json({ message: "サーバーエラー", error: true });
+      }
+    },
   };
 };

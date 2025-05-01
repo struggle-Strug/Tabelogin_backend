@@ -146,5 +146,46 @@ module.exports = (db) => {
         res.status(400).json({ message: err.message });
       }
     },
+
+    getUserById: async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        if (!id) {
+          return res
+            .status(400)
+            .json({ message: "user_id is required", error: true });
+        }
+
+        const [rows] = await db.query(
+          `
+          SELECT 
+            id,
+            name,
+            email,
+            sex,
+            birthday,
+            introduce,
+            image,
+            created_at,
+            updated
+          FROM users
+          WHERE id = ?
+          `,
+          [id]
+        );
+
+        if (rows.length === 0) {
+          return res
+            .status(404)
+            .json({ message: "User not found", error: true });
+        }
+
+        return res.json(rows[0]);
+      } catch (error) {
+        console.error("エラー:", error);
+        return res.status(500).json({ message: "サーバーエラー", error: true });
+      }
+    },
   };
 };
