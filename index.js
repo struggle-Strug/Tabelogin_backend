@@ -19,6 +19,9 @@ app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false, limit: "5mb" }));
 
+// Serve static files from the 'uploads' directory
+app.use("/uploads", express.static("uploads"));
+
 // Initialize Passport
 app.use(passport.initialize());
 require("./config/passport"); // ✅ Ensure passport strategies are loaded

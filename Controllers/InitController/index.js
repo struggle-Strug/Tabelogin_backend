@@ -32,8 +32,6 @@ module.exports = async (db) => {
       CREATE TABLE IF NOT EXISTS contents (
         id INT PRIMARY KEY AUTO_INCREMENT,
         user_id INT NOT NULL,
-        title VARCHAR(255) DEFAULT NULL,
-        content VARCHAR(255) DEFAULT NULL,
         updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -48,6 +46,19 @@ module.exports = async (db) => {
         updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (content_id) REFERENCES contents(id) ON DELETE CASCADE
+      );
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS content_comments (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        content_id INT NOT NULL,
+        user_id INT NOT NULL,
+        comment VARCHAR(255) DEFAULT NULL,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (content_id) REFERENCES contents(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
     `);
 
