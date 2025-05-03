@@ -32,7 +32,7 @@ module.exports = (db) => {
 
         // Insert new user into the database
         await db.query(
-          "INSERT INTO users (email, password,created_at, updated) VALUES (?, ?, NOW(), NOW())",
+          "INSERT INTO users (email, password, created_at, updated) VALUES (?, ?, NOW(), NOW())",
           [email, hashedPassword]
         );
 
@@ -59,10 +59,17 @@ module.exports = (db) => {
         const userId = req.user.id;
 
         // Update user information in the database
-        await db.query(
+        const result = await db.query(
           "UPDATE users SET name = ?, introduce = ?, birthday = ?, image = ?, updated = NOW() WHERE id = ?",
-          [name, introduction, birthday, image ? image : null, userId]
+          [name, introduction, birthday, image || null, userId]
         );
+
+        // Check if any row is updated
+        if (result.affectedRows === 0) {
+          return res
+            .status(404)
+            .json({ message: "ユーザーが見つかりません", error: true });
+        }
 
         return res
           .status(200)
@@ -83,21 +90,14 @@ module.exports = (db) => {
           [email]
         );
 
-        // ✅ FIX: Check if existingUser is empty before accessing `existingUser[0]`
+        // Check if user exists
         if (!existingUser || existingUser.length === 0) {
           return res
             .status(400)
             .json({ message: "未登録のユーザーです。", error: true });
         }
 
-        // ✅ FIX: Ensure `existingUser[0]` exists before accessing `.password`
-        if (!existingUser[0].password) {
-          return res
-            .status(400)
-            .json({ message: "パスワードが見つかりません", error: true });
-        }
-
-        // ✅ Compare passwords correctly
+        // Compare passwords correctly
         const isMatch = await bcrypt.compare(
           password,
           existingUser[0].password
@@ -108,7 +108,7 @@ module.exports = (db) => {
             .json({ message: "パスワードが間違っています。", error: true });
         }
 
-        // ✅ Generate JWT Token
+        // Generate JWT Token
         const token = jwt.sign(
           { email: email },
           process.env.SECRET || "secret",
@@ -130,6 +130,10 @@ module.exports = (db) => {
 
     tokenlogin: async (req, res) => {
       try {
+        if (!req.user) {
+          return res.status(400).json({ message: "User not found" });
+        }
+
         const token = jwt.sign(
           { id: req.user._id },
           process.env.SECRET || "secret",
@@ -143,7 +147,8 @@ module.exports = (db) => {
           user: req.user,
         });
       } catch (err) {
-        res.status(400).json({ message: err.message });
+        console.error("Token login error:", err);
+        return res.status(400).json({ message: err.message });
       }
     },
 
@@ -170,8 +175,7 @@ module.exports = (db) => {
             created_at,
             updated
           FROM users
-          WHERE id = ?
-          `,
+          WHERE id = ?`,
           [id]
         );
 
@@ -184,6 +188,34 @@ module.exports = (db) => {
         return res.json(rows[0]);
       } catch (error) {
         console.error("エラー:", error);
+        return res.status(500).json({ message: "サーバーエラー", error: true });
+      }
+    },
+
+    getUserStats: async (req, res) => {
+      try {
+        const userId = req.params.id;
+        console.log(userId);
+        const [result] = await db.query(
+          `
+          SELECT 
+            (SELECT COUNT(*) FROM contents WHERE user_id = ?) AS content_count,
+            (SELECT COUNT(*) FROM users_mappings WHERE follow_id = ?) AS follow_count,
+            (SELECT COUNT(*) FROM users_mappings WHERE follower_id = ?) AS follower_count
+        `,
+          [userId, userId, userId]
+        );
+
+        const contentCount = result[0].content_count;
+        const followCount = result[0].follow_count;
+        const followerCount = result[0].follower_count;
+        return res.json({
+          content_count: contentCount,
+          follow_count: followCount,
+          follower_count: followerCount,
+        });
+      } catch (error) {
+        console.error("Error fetching user stats:", error);
         return res.status(500).json({ message: "サーバーエラー", error: true });
       }
     },
