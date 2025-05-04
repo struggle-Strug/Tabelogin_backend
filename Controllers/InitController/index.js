@@ -63,6 +63,18 @@ module.exports = async (db) => {
     `);
 
     await db.query(`
+      CREATE TABLE IF NOT EXISTS content_likes (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        content_id INT NOT NULL,
+        user_id INT NOT NULL,
+        updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (content_id) REFERENCES contents(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+    `);
+
+    await db.query(`
       CREATE TABLE IF NOT EXISTS users_mappings (
         id INT PRIMARY KEY AUTO_INCREMENT,
         follow_id INT NOT NULL,

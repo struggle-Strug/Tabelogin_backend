@@ -182,7 +182,6 @@ module.exports = (db) => {
         return res.status(500).json({ message: "サーバーエラー", error: true });
       }
     },
-
     getImages: async (req, res) => {
       try {
         const { id } = req.params;
@@ -208,6 +207,79 @@ module.exports = (db) => {
         const images = rows.map((row) => row.image_url);
 
         return res.json(images);
+      } catch (error) {
+        console.error("エラー:", error);
+        return res.status(500).json({ message: "サーバーエラー", error: true });
+      }
+    },
+    likePost: async (req, res) => {
+      try {
+        const { content_id, user_id } = req.body;
+
+        // Check if the like already exists in the database
+        const [existingLike] = await db.query(
+          "SELECT * FROM content_likes WHERE content_id = ? AND user_id = ?",
+          [content_id, user_id]
+        );
+
+        if (existingLike.length > 0) {
+          // If the like exists, delete it
+          const deleteQuery = `
+            DELETE FROM content_likes 
+            WHERE content_id = ? AND user_id = ?
+          `;
+          await db.query(deleteQuery, [content_id, user_id]);
+          return res.status(200).json({ message: "Like removed" });
+        } else {
+          // If the like does not exist, insert it
+          const insertQuery = `
+            INSERT INTO content_likes (content_id, user_id, created_at, updated)
+            VALUES (?, ?, NOW(), NOW())
+          `;
+          await db.query(insertQuery, [content_id, user_id]);
+          return res.status(200).json({ message: "Like added" });
+        }
+      } catch (error) {
+        console.error("エラー:", error);
+        return res.status(500).json({ message: "サーバーエラー", error: true });
+      }
+    },
+    getAllContentsWithLikes: async (req, res) => {
+      try {
+        // Query to get all content IDs and the user IDs who liked each content
+        const [rows] = await db.query(`
+          SELECT 
+            content_likes.content_id,
+            content_likes.user_id AS liked_user_id
+          FROM content_likes
+          GROUP BY content_likes.content_id, content_likes.user_id
+        `);
+
+        // Group by content_id and arrange the user_ids who liked each post
+        const contentMap = {};
+
+        for (const row of rows) {
+          if (!contentMap[row.content_id]) {
+            contentMap[row.content_id] = {
+              content_id: row.content_id,
+              liked_user_ids: [],
+            };
+          }
+
+          // Add liked user_id to the array if it doesn't already exist
+          if (
+            !contentMap[row.content_id].liked_user_ids.includes(
+              row.liked_user_id
+            )
+          ) {
+            contentMap[row.content_id].liked_user_ids.push(row.liked_user_id);
+          }
+        }
+
+        // Convert the contentMap to an array to send in the response
+        const result = Object.values(contentMap);
+
+        return res.json(result);
       } catch (error) {
         console.error("エラー:", error);
         return res.status(500).json({ message: "サーバーエラー", error: true });
