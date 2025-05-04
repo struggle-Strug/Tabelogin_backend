@@ -195,7 +195,6 @@ module.exports = (db) => {
     getUserStats: async (req, res) => {
       try {
         const userId = req.params.id;
-        console.log(userId);
         const [result] = await db.query(
           `
           SELECT 

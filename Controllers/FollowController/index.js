@@ -42,7 +42,7 @@ module.exports = (db) => {
 
     checkFollowStatus: async (req, res) => {
       try {
-        const { follower_id, follow_id } = req.params;
+        const { follower_id, follow_id } = req.body;
         const checkFollowQuery = `SELECT * FROM users_mappings WHERE follower_id = ? AND follow_id = ?`;
         const [followStatus] = await db.query(checkFollowQuery, [
           follower_id,
